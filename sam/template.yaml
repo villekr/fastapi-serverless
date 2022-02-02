@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  fastapi-serverless
+  Sample SAM Template for fastapi-serverless
+
+Parameters:
+  LayerARN:
+    Description: Lambda Layer ARN
+    Type: String
+  Stage:
+    Description: Stage name
+    Type: String
+
+Globals:
+  Function:
+    Runtime: python3.9
+    Layers:
+      - !Sub "${LayerARN}"
+    Timeout: 15
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+
+Resources:
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      OpenApiVersion: '3.0.0'
+  Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${Stage}-fastapi-serverless"
+      CodeUri: ./../.sam-package
+      Handler: fastapi_serverless/app.handler
+      Policies:
+        - AWSLambdaExecute
+      Events:
+        Proxy:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: Api
+            Path: /{proxy+}
+            Method: ANY
